@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <import type="android.view.View" />
+        
+        <variable
+            name="viewModel"
+            type="com.dentim.karaoke.ui.upload.UploadViewModel" />
+            
+        <variable
+            name="selectedFileState"
+            type="com.dentim.karaoke.ui.upload.SelectedFileState" />
+            
+        <variable
+            name="selectedAIModel"
+            type="com.dentim.karaoke.domain.model.AIModel" />
+            
+        <variable
+            name="uploadState"
+            type="com.dentim.karaoke.ui.upload.UploadState" />
+            
+        <variable
+            name="hasSelectedFile"
+            type="Boolean" />
+            
+        <variable
+            name="isUploading"
+            type="Boolean" />
+            
+        <variable
+            name="canUpload"
+            type="Boolean" />
+    </data>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Header -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:text="@string/upload_new_track"
+                android:textAppearance="?attr/textAppearanceHeadline6" />
+
+            <!-- File Selection Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="@string/select_audio_file"
+                        android:textAppearance="?attr/textAppearanceSubtitle1" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/select_file_button"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:enabled="@{!isUploading}"
+                        android:text="@string/choose_file"
+                        app:icon="@drawable/ic_file_upload" />
+
+                    <!-- Selected File Info -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="@{hasSelectedFile ? View.VISIBLE : View.GONE}">
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginVertical="8dp"
+                            android:background="?attr/colorOutline" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:text="@{selectedFileState.filename}"
+                            android:textAppearance="?attr/textAppearanceBody1"
+                            android:textStyle="bold"
+                            tools:text="song.mp3" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@{selectedFileState.formattedSize}"
+                                android:textAppearance="?attr/textAppearanceBody2"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                tools:text="5.2 MB" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@{selectedFileState.formattedDuration}"
+                                android:textAppearance="?attr/textAppearanceBody2"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                tools:text="3:42" />
+
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/clear_selection_button"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="8dp"
+                            android:enabled="@{!isUploading}"
+                            android:text="@string/clear"
+                            android:textColor="?attr/colorError" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- AI Model Selection Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:visibility="@{hasSelectedFile ? View.VISIBLE : View.GONE}"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="@string/ai_model"
+                        android:textAppearance="?attr/textAppearanceSubtitle1" />
+
+                    <RadioGroup
+                        android:id="@+id/ai_model_radio_group"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:enabled="@{!isUploading}">
+
+                        <RadioButton
+                            android:id="@+id/radio_demucs"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:enabled="@{!isUploading}"
+                            android:text="@string/demucs_recommended" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="32dp"
+                            android:layout_marginBottom="8dp"
+                            android:text="@string/demucs_description"
+                            android:textAppearance="?attr/textAppearanceBody2"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <RadioButton
+                            android:id="@+id/radio_spleeter"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:enabled="@{!isUploading}"
+                            android:text="@string/spleeter_fast" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="32dp"
+                            android:text="@string/spleeter_description"
+                            android:textAppearance="?attr/textAppearanceBody2"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    </RadioGroup>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Spacer -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Action Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/cancel_button"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/cancel" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/upload_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:enabled="@{canUpload}"
+                    android:text="@{isUploading ? @string/uploading : @string/start_upload}"
+                    app:icon="@{isUploading ? @drawable/ic_upload_progress : @drawable/ic_upload}"
+                    tools:text="Start Upload" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</layout>

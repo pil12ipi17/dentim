@@ -1,0 +1,60 @@
+# Python Backend для Android Karaoke MVP
+# Основные зависимости для FastAPI сервера с AI обработкой аудио
+
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# AI Audio Processing
+demucs==4.0.1
+spleeter==2.4.0
+torch>=2.1.0
+torchaudio>=2.1.0
+librosa>=0.10.1
+soundfile>=0.12.1
+
+# Audio Processing and Utilities
+ffmpeg-python==0.2.0
+pydub==0.25.1
+
+# HTTP and WebSocket
+httpx==0.25.2
+websockets==12.0
+python-socketio==5.10.0
+
+# File Handling and Validation
+aiofiles==23.2.1
+python-magic==0.4.27
+filetype==1.2.0
+
+# Task Queue (for async processing)
+celery==5.3.4
+redis==5.0.1
+
+# Database (if needed for task tracking)
+sqlalchemy==2.0.23
+alembic==1.13.1
+asyncpg==0.29.0  # PostgreSQL async driver
+
+# Configuration and Environment
+python-dotenv==1.0.0
+pydantic-settings==2.1.0
+
+# Logging and Monitoring
+structlog==23.2.0
+sentry-sdk[fastapi]==1.38.0
+
+# Development Dependencies
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+pre-commit==3.6.0
+
+# Type hints for libraries
+types-aiofiles==23.2.0.20240106
+types-redis==4.6.0.11

@@ -1,0 +1,92 @@
+# Android
+build/
+out/
+.gradle/
+.idea/
+*.iml
+*.class
+*.jar
+*.log
+.env*
+local.properties
+
+# Android APK/Bundle artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Android profiling
+*.hprof
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+ENV/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# FastAPI specific
+.pytest_cache/
+.coverage
+*.log
+
+# AI Models (large files)
+models/
+*.h5
+*.pb
+*.onnx
+*.pt
+*.pth
+
+# Temporary files
+temp_uploads/
+tmp/
+*.tmp
+*.swp
+*.bak
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.sublime-*
+*.code-workspace
+
+# OS specific
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+secrets/
+*.key
+*.crt
+*.pem
+
+# Build artifacts
+node_modules/
+coverage/
+*.min.js
+
+# Logs
+*.log
+logs/
+log/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3

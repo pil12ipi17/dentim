@@ -1,87 +1,133 @@
-# Dentim - Spec-Driven Development Project
+# Android Karaoke MVP 🎤🎵
 
-Этот проект настроен для использования **Spec-Kit** - инструмента для Spec-Driven Development от GitHub.
+AI-powered karaoke application with voice separation technology.
 
-## 🚀 Что такое Spec-Driven Development?
+## 🏗️ Architecture
 
-Spec-Driven Development переворачивает традиционный подход к разработке ПО. Вместо того чтобы код был главным, спецификации становятся исполняемыми и напрямую генерируют рабочие реализации.
+### Backend (Python FastAPI)
+- **AI Voice Separation**: Demucs/Spleeter integration for isolating vocals
+- **REST API**: Upload, process, and retrieve audio files
+- **Mock Processing**: Ready for real AI model integration
+- **Health Monitoring**: Status endpoints for system monitoring
 
-## 📋 Доступные команды
+### Android Client (Kotlin)
+- **Clean Architecture**: Data/Domain/Presentation layers
+- **Modern Android**: Hilt DI, Room Database, Retrofit, Navigation
+- **MVVM Pattern**: ViewModels with StateFlow for reactive UI
+- **File Management**: Upload audio files with progress tracking
+- **Real-time Updates**: Processing status monitoring
 
-В VS Code с GitHub Copilot теперь доступны следующие slash-команды для структурированной разработки:
+## 🚀 Quick Start
 
-### Основные команды (Core Commands)
+### Prerequisites
+- **Java 17** (via Homebrew: `brew install openjdk@17`)
+- **Python 3.11+** 
+- **Android Studio** (latest)
+- **Android SDK 34+**
 
-1. **`/speckit.constitution`** - Создание принципов проекта
-   - Устанавливает основополагающие принципы и руководящие принципы разработки
-   - Пример: `/speckit.constitution Создать принципы, ориентированные на качество кода, стандарты тестирования, согласованность пользовательского опыта и требования к производительности`
+### 1. Setup Environment
+```bash
+# Run setup script
+./setup-env.sh
 
-2. **`/speckit.specify`** - Определение требований
-   - Описывает ЧТО вы хотите построить и ПОЧЕМУ (не техстек!)
-   - Пример: `/speckit.specify Разработать приложение для организации фотографий в отдельные альбомы`
-
-3. **`/speckit.plan`** - Создание технического плана
-   - Определяет техстек и архитектурные решения
-   - Пример: `/speckit.plan Использовать Next.js с TypeScript и PostgreSQL`
-
-4. **`/speckit.tasks`** - Генерация списка задач
-   - Создает подробный список выполнимых задач из плана реализации
-   - Пример: `/speckit.tasks`
-
-5. **`/speckit.implement`** - Выполнение реализации
-   - Выполняет все задачи и строит функцию согласно плану
-   - Пример: `/speckit.implement`
-
-### Дополнительные команды (Optional Commands)
-
-- **`/speckit.clarify`** - Уточнение неопределенных областей (рекомендуется перед `/speckit.plan`)
-- **`/speckit.analyze`** - Анализ согласованности между артефактами (запускать после `/speckit.tasks`, перед `/speckit.implement`)
-- **`/speckit.checklist`** - Генерация контрольных списков качества для проверки полноты требований
-
-## 🔄 Рекомендуемый процесс разработки
-
-1. **Установите принципы**: `/speckit.constitution`
-2. **Опишите требования**: `/speckit.specify`
-3. **Уточните неясности**: `/speckit.clarify` (опционально)
-4. **Создайте план**: `/speckit.plan`
-5. **Разбейте на задачи**: `/speckit.tasks`
-6. **Проанализируйте**: `/speckit.analyze` (опционально)
-7. **Реализуйте**: `/speckit.implement`
-
-## 📁 Структура проекта
-
-```
-.
-├── .specify/           # Конфигурация Spec-Kit
-│   ├── memory/        # Память проекта (принципы, история)
-│   ├── scripts/       # Вспомогательные скрипты
-│   └── templates/     # Шаблоны для спецификаций
-├── .github/           # GitHub конфигурация
-│   └── prompts/      # Промпты для slash-команд
-└── .vscode/          # VS Code настройки
+# Or manually:
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
-## ⚙️ Установленные инструменты
+### 2. Backend Setup
+```bash
+cd backend
 
-В вашей системе проверены следующие инструменты:
-- ✅ Git
-- ✅ GitHub Copilot (IDE-based)
-- ✅ Claude Code
-- ✅ Gemini CLI
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate
 
-## 🎯 Начало работы
+# Install dependencies
+pip install -r requirements.txt
 
-1. Откройте VS Code в этой папке
-2. Убедитесь, что GitHub Copilot активен
-3. Начните с команды `/speckit.constitution` для установки принципов проекта
-4. Следуйте рекомендуемому процессу разработки
+# Start server
+python src/main.py
+```
+Server will be available at `http://localhost:8000`
 
-## 📚 Дополнительные ресурсы
+### 3. Android Setup
+```bash
+cd android
 
-- [Официальная документация Spec-Kit](https://github.github.io/spec-kit/)
-- [Репозиторий GitHub](https://github.com/github/spec-kit)
-- [Видео-обзор](https://www.youtube.com/watch?v=a9eR1xsfvHg)
+# Build project
+./gradlew assembleDebug
 
----
+# Or open in Android Studio:
+# File → Open → android/
+```
 
-🌱 **Spec-Kit помогает создавать качественное ПО быстрее!**
+## 📱 Android Studio Setup
+
+1. **Open Project**: `File → Open → /path/to/dentim/android/`
+2. **Gradle Sync**: Wait for automatic sync to complete
+3. **Run Configuration**: 
+   - Select `app` from dropdown
+   - Choose device/emulator
+   - Click ▶️ Run
+
+### Troubleshooting
+- **Java Issues**: Ensure `JAVA_HOME=/opt/homebrew/opt/openjdk@17`
+- **Gradle Issues**: Run `./gradlew clean` then rebuild
+- **JDK Image Error**: Already disabled in `gradle.properties`
+
+## 🧪 Testing
+
+### Backend Tests
+```bash
+cd backend
+source venv/bin/activate
+pytest tests/ -v
+```
+
+### Android Tests
+```bash
+cd android
+./gradlew test
+```
+
+## 📖 API Documentation
+
+### Backend Endpoints
+- `GET /health` - Server health check
+- `POST /upload` - Upload audio file for processing
+- `GET /status/{job_id}` - Check processing status
+- `GET /download/{job_id}/{type}` - Download processed audio
+- `POST /cancel/{job_id}` - Cancel processing job
+
+### API Testing
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Upload file
+curl -X POST "http://localhost:8000/upload" \
+  -F "file=@audio.mp3" \
+  -F "ai_model=demucs"
+```
+
+## 🛠️ Tech Stack
+
+### Backend
+- **FastAPI** - Modern Python web framework
+- **Uvicorn** - ASGI server
+- **Python-multipart** - File upload support
+- **Pytest** - Testing framework
+
+### Android
+- **Kotlin** - Primary language
+- **Hilt** - Dependency injection
+- **Room** - Local database
+- **Retrofit** - HTTP client
+- **Navigation** - Fragment navigation
+- **ViewBinding** - View binding
+- **Coroutines** - Async programming
+
+## 🎵 Ready to Rock! 🎵
+
+Your Android Karaoke MVP is ready for development. Start the backend server, open Android Studio, and let's build something amazing! 🚀

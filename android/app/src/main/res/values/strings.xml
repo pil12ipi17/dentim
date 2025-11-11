@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <!-- App Strings -->
+    <string name="app_name">Karaoke</string>
+    <string name="loading">Loading…</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="retry">Retry</string>
+    <string name="delete">Delete</string>
+    <string name="save">Save</string>
+    
+    <!-- Navigation -->
+    <string name="upload_track">Upload Track</string>
+    <string name="track_library">Track Library</string>
+    <string name="karaoke_player">Karaoke Player</string>
+    
+    <!-- Progress -->
+    <string name="progress_percent">%d%%</string>
+    <string name="progress_zero_percent">0%</string>
+    
+    <!-- Home Screen -->
+    <string name="home_title">Welcome to Karaoke</string>
+    <string name="recent_tracks">Recent Tracks</string>
+    <string name="active_processing">Active Processing</string>
+    <string name="upload_new_track">Upload New Track</string>
+    <string name="browse_library">Browse Library</string>
+    <string name="recent_sessions">Recent Sessions</string>
+    
+    <!-- Upload Screen -->
+    <string name="select_audio_file">Select Audio File</string>
+    <string name="choose_file">Choose File</string>
+    <string name="clear">Clear</string>
+    <string name="start_upload">Start Upload</string>
+    <string name="uploading">Uploading…</string>
+    <string name="processing_track">Processing Track</string>
+    <string name="ai_model">AI Model</string>
+    <string name="demucs_recommended">Demucs (Recommended)</string>
+    <string name="demucs_description">High-quality separation, slower processing</string>
+    <string name="spleeter_fast">Spleeter (Fast)</string>
+    <string name="spleeter_description">Good quality separation, faster processing</string>
+    
+    <!-- Library Screen -->
+    <string name="search_tracks">Search tracks…</string>
+    <string name="no_tracks">No tracks available</string>
+    <string name="track_count">%d tracks</string>
+    
+    <!-- Player Screen -->
+    <string name="vocals_volume">Vocals Volume</string>
+    <string name="instrumental_volume">Instrumental Volume</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="stop">Stop</string>
+    
+    <!-- Processing Status -->
+    <string name="status_pending">Pending</string>
+    <string name="status_uploading">Uploading</string>
+    <string name="status_processing">Processing</string>
+    <string name="status_completed">Completed</string>
+    <string name="status_failed">Failed</string>
+    <string name="status_cancelled">Cancelled</string>
+    
+    <!-- Errors -->
+    <string name="error_title">Error</string>
+    <string name="error_network">Network error</string>
+    <string name="error_upload_failed">Upload failed</string>
+    <string name="error_processing_failed">Processing failed</string>
+    <string name="error_file_not_found">File not found</string>
+    <string name="error_invalid_file">Invalid audio file</string>
+    <string name="error_permission_denied">Permission denied</string>
+    <string name="error_unknown">An unknown error occurred</string>
+    
+</resources>
