@@ -9,11 +9,12 @@ import java.util.Date
 
 data class Processing(
     val id: String,
-    val trackId: String,
+    val trackId: String?,
     val status: ProcessingStatus,
     val progressPercent: Int,
     val aiModel: AIModel,
     val errorMessage: String? = null,
+    val filename: String? = null,
     val vocalsPath: String? = null,
     val instrumentalPath: String? = null,
     val processingTimeMs: Long? = null,
@@ -44,6 +45,7 @@ data class Session(
  */
 enum class ProcessingStatus {
     PENDING,
+    QUEUED,
     UPLOADING,
     PROCESSING,
     COMPLETED,
@@ -51,7 +53,7 @@ enum class ProcessingStatus {
     CANCELLED;
     
     val isActive: Boolean
-        get() = this in listOf(PENDING, UPLOADING, PROCESSING)
+        get() = this in listOf(PENDING, QUEUED, UPLOADING, PROCESSING)
     
     val isCompleted: Boolean
         get() = this == COMPLETED
@@ -69,7 +71,9 @@ enum class AIModel(val displayName: String, val apiValue: String) {
     
     companion object {
         fun fromApiValue(value: String): AIModel {
-            return values().find { it.apiValue == value } ?: DEMUCS
+            // Clean the value from any surrounding quotes
+            val cleanValue = value.trim().removeSurrounding("\"")
+            return values().find { it.apiValue == cleanValue } ?: DEMUCS
         }
     }
 }

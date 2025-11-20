@@ -54,10 +54,73 @@
             android:layout_marginTop="4dp"
             android:textAppearance="?attr/textAppearanceCaption"
             android:textColor="?attr/colorOnSurfaceVariant"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/playButtonsLayout"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/artistText"
             tools:text="2 hours ago" />
+
+        <TextView
+            android:id="@+id/processingStatusText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textColor="?attr/colorPrimary"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintEnd_toStartOf="@id/playButtonsLayout"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/dateText"
+            tools:text="🔄 Processing..." 
+            tools:visibility="visible" />
+
+        <ProgressBar
+            android:id="@+id/processingProgressBar"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="0dp"
+            android:layout_height="4dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/processingStatusText"
+            tools:progress="65"
+            tools:visibility="visible" />
+
+        <TextView
+            android:id="@+id/processingProgressText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/processingProgressBar"
+            tools:text="65% - Separating audio..."
+            tools:visibility="visible" />
+
+        <LinearLayout
+            android:id="@+id/playButtonsLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/artistText">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/playButton"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="Open Player"
+                app:icon="@drawable/ic_play_arrow"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="24dp" />
+
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

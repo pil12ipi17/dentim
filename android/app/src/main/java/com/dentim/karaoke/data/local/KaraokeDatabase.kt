@@ -24,7 +24,7 @@ import com.dentim.karaoke.data.local.entity.SessionEntity
         ProcessingEntity::class,
         SessionEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

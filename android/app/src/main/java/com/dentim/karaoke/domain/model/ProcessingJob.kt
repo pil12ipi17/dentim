@@ -28,6 +28,7 @@ data class ProcessingJob(
     val displayStatus: String
         get() = when (status) {
             ProcessingStatus.PENDING -> "Waiting in queue"
+            ProcessingStatus.QUEUED -> "Queued for processing"
             ProcessingStatus.UPLOADING -> "Uploading file"
             ProcessingStatus.PROCESSING -> currentStep ?: "Processing audio"
             ProcessingStatus.COMPLETED -> "Completed"

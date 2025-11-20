@@ -9,9 +9,11 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.dentim.karaoke.R
 import com.dentim.karaoke.databinding.FragmentHomeBinding
 import com.dentim.karaoke.ui.home.adapter.RecentTracksAdapter
 import com.dentim.karaoke.ui.home.adapter.ActiveProcessingAdapter
+import com.dentim.karaoke.ui.player.PlayerViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -24,6 +26,7 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private val viewModel: HomeViewModel by viewModels()
+    private val playerViewModel: PlayerViewModel by viewModels()
     
     private lateinit var recentTracksAdapter: RecentTracksAdapter
     private lateinit var activeProcessingAdapter: ActiveProcessingAdapter
@@ -40,16 +43,44 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
+        setupAudioPlayer()
         setupRecyclerViews()
         setupClickListeners()
         observeViewModel()
+        
+        // Refresh data when fragment loads
+        viewModel.refreshData()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Force refresh data when user returns to home screen
+        viewModel.forceRefreshData()
+    }
+    
+    private fun setupAudioPlayer() {
+        // AudioPlayer is now automatically injected via DI
+        // No need to create or initialize it manually
     }
     
     private fun setupRecyclerViews() {
         // Recent tracks adapter
-        recentTracksAdapter = RecentTracksAdapter { track ->
-            // Handle track click
-        }
+        recentTracksAdapter = RecentTracksAdapter(
+            onTrackClick = { trackWithProcessing ->
+                // Handle track click
+                viewModel.onTrackWithProcessingSelected(trackWithProcessing)
+            },
+            onPlayClick = { trackWithProcessing ->
+                // Navigate to player and start playing this track
+                val processingId = trackWithProcessing.processingId
+                if (processingId != null && trackWithProcessing.canPlay) {
+                    // Set the track in player view model
+                    playerViewModel.setCurrentTrack(trackWithProcessing)
+                    // Navigate to player tab via navigation
+                    findNavController().navigate(HomeFragmentDirections.actionHomeToPlayer())
+                }
+            }
+        )
         
         binding.recentTracksRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -70,15 +101,28 @@ class HomeFragment : Fragment() {
     private fun setupClickListeners() {
         binding.uploadFab.setOnClickListener {
             // Navigate to upload screen
-            findNavController().navigate(HomeFragmentDirections.actionHomeToUpload())
+            findNavController().navigate(R.id.nav_upload)
+        }
+        
+        // Setup swipe to refresh
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            viewModel.refreshData()
         }
     }
     
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
-            // Observe recent tracks
-            viewModel.recentTracks.collect { tracks ->
-                recentTracksAdapter.submitList(tracks)
+            // Observe recent tracks with processing info
+            viewModel.recentTracksWithProcessing.collect { tracksWithProcessing ->
+                android.util.Log.d("HomeFragment", "Received ${tracksWithProcessing.size} tracks with processing")
+                tracksWithProcessing.forEach { trackWithProcessing ->
+                    android.util.Log.d("HomeFragment", 
+                        "Track: ${trackWithProcessing.track.filename}, " +
+                        "Processing: ${trackWithProcessing.processing?.id}, " +
+                        "Status: ${trackWithProcessing.processing?.status}, " +
+                        "Can play: ${trackWithProcessing.canPlay}")
+                }
+                recentTracksAdapter.submitList(tracksWithProcessing)
             }
         }
         
@@ -88,10 +132,18 @@ class HomeFragment : Fragment() {
                 activeProcessingAdapter.submitList(processingJobs)
             }
         }
+        
+        viewLifecycleOwner.lifecycleScope.launch {
+            // Observe loading state
+            viewModel.isLoading.collect { isLoading ->
+                binding.swipeRefreshLayout.isRefreshing = isLoading
+            }
+        }
     }
     
     override fun onDestroyView() {
         super.onDestroyView()
+        // AudioPlayer is now managed as singleton via DI, don't release it here
         _binding = null
     }
 }

@@ -8,9 +8,12 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.*
+import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.*
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import com.dentim.karaoke.domain.usecase.UploadTrackUseCase
 import com.dentim.karaoke.domain.usecase.UploadProgress
 import com.dentim.karaoke.domain.model.AIModel
@@ -26,7 +29,8 @@ import java.util.Date
 /**
  * Unit tests for UploadViewModel
  */
-@ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
+@Config(manifest=Config.NONE)
 class UploadViewModelTest {
     
     @get:Rule
@@ -38,23 +42,22 @@ class UploadViewModelTest {
     private lateinit var uploadTrackUseCase: UploadTrackUseCase
     
     @Mock
-    private lateinit var mockFile: File
-    
-    @Mock
     private lateinit var mockUri: Uri
     
     private lateinit var viewModel: UploadViewModel
-    
+
+    private val audioFilePath = "/Users/denis/AndroidKaraoke/dentim/Audio/1.valerij-meladze-sera-albom-sera.mp3"
+    private lateinit var realFile: File
+
     @Before
     fun setup() {
         MockitoAnnotations.openMocks(this)
         Dispatchers.setMain(testDispatcher)
         
-        viewModel = UploadViewModel(uploadTrackUseCase)
+        // Setup real file
+        realFile = File(audioFilePath)
         
-        // Setup mock file
-        whenever(mockFile.name).thenReturn("test_song.mp3")
-        whenever(mockFile.length()).thenReturn(1024L * 1024L) // 1MB
+        viewModel = UploadViewModel(uploadTrackUseCase)
     }
     
     @Test
@@ -68,19 +71,19 @@ class UploadViewModelTest {
     @Test
     fun `onFileSelected should update selected file state`() = runTest {
         val fileInfo = FileInfo(
-            name = "test_song.mp3",
-            size = 1024L * 1024L,
+            name = realFile.name,
+            size = realFile.length(),
             mimeType = "audio/mpeg",
             uri = mockUri
         )
         
-        viewModel.onFileSelected(mockFile, fileInfo)
+        viewModel.onFileSelected(realFile, fileInfo)
         testDispatcher.scheduler.advanceUntilIdle()
         
         val selectedFile = viewModel.selectedFile.value
         assertNotNull("File should be selected", selectedFile)
-        assertEquals("Filename should match", "test_song.mp3", selectedFile?.filename)
-        assertEquals("File size should match", 1024L * 1024L, selectedFile?.size)
+        assertEquals("Filename should match", realFile.name, selectedFile?.filename)
+        assertEquals("File size should match", realFile.length(), selectedFile?.size)
     }
     
     @Test
@@ -92,8 +95,8 @@ class UploadViewModelTest {
     
     @Test
     fun `clearSelection should reset state`() = runTest {
-        val fileInfo = FileInfo("test.mp3", 1024L, "audio/mpeg", mockUri)
-        viewModel.onFileSelected(mockFile, fileInfo)
+        val fileInfo = FileInfo(realFile.name, realFile.length(), "audio/mpeg", mockUri)
+        viewModel.onFileSelected(realFile, fileInfo)
         testDispatcher.scheduler.advanceUntilIdle()
         
         viewModel.clearSelection()
@@ -106,12 +109,12 @@ class UploadViewModelTest {
     @Test
     fun `startUpload should trigger upload process`() = runTest {
         // Setup
-        val fileInfo = FileInfo("test.mp3", 1024L, "audio/mpeg", mockUri)
+        val fileInfo = FileInfo(realFile.name, realFile.length(), "audio/mpeg", mockUri)
         val track = Track(
             id = "track1",
-            filename = "test.mp3",
+            filename = realFile.name,
             originalPath = "/path/test.mp3",
-            fileSize = 1024L,
+            fileSize = realFile.length(),
             durationMs = 180000L,
             mimeType = "audio/mpeg",
             checksum = "abc123",
@@ -135,9 +138,9 @@ class UploadViewModelTest {
             UploadProgress.Completed(track, processing)
         )
         
-        whenever(uploadTrackUseCase.execute(any(), any(), any())).thenReturn(uploadFlow)
+        whenever(uploadTrackUseCase.execute(any(), any(), any(), any())).thenReturn(uploadFlow)
         
-        viewModel.onFileSelected(mockFile, fileInfo)
+        viewModel.onFileSelected(realFile, fileInfo)
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Test
@@ -145,14 +148,14 @@ class UploadViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Verify
-        verify(uploadTrackUseCase).execute(eq(mockFile), eq(AIModel.DEMUCS), eq("test.mp3"))
+        verify(uploadTrackUseCase).execute(eq(realFile), eq(AIModel.DEMUCS), eq(realFile.name), eq(true))
         assertTrue("Upload should be completed", viewModel.uploadState.value.isCompleted)
         assertFalse("Should not be uploading after completion", viewModel.uploadState.value.isUploading)
     }
     
     @Test
     fun `startUpload with duplicate should handle duplicate state`() = runTest {
-        val fileInfo = FileInfo("test.mp3", 1024L, "audio/mpeg", mockUri)
+        val fileInfo = FileInfo(realFile.name, realFile.length(), "audio/mpeg", mockUri)
         val existingTrack = Track(
             id = "existing1",
             filename = "existing.mp3", 
@@ -171,9 +174,9 @@ class UploadViewModelTest {
             UploadProgress.DuplicateFound(existingTrack)
         )
         
-        whenever(uploadTrackUseCase.execute(any(), any(), any())).thenReturn(uploadFlow)
+        whenever(uploadTrackUseCase.execute(any(), any(), any(), any())).thenReturn(uploadFlow)
         
-        viewModel.onFileSelected(mockFile, fileInfo)
+        viewModel.onFileSelected(realFile, fileInfo)
         testDispatcher.scheduler.advanceUntilIdle()
         
         viewModel.startUpload()
@@ -185,16 +188,16 @@ class UploadViewModelTest {
     
     @Test
     fun `startUpload with error should handle error state`() = runTest {
-        val fileInfo = FileInfo("test.mp3", 1024L, "audio/mpeg", mockUri)
+        val fileInfo = FileInfo(realFile.name, realFile.length(), "audio/mpeg", mockUri)
         val uploadFlow = flowOf(
             UploadProgress.Started,
             UploadProgress.UploadingToServer,
             UploadProgress.Failed("Network error")
         )
         
-        whenever(uploadTrackUseCase.execute(any(), any(), any())).thenReturn(uploadFlow)
+        whenever(uploadTrackUseCase.execute(any(), any(), any(), any())).thenReturn(uploadFlow)
         
-        viewModel.onFileSelected(mockFile, fileInfo)
+        viewModel.onFileSelected(realFile, fileInfo)
         testDispatcher.scheduler.advanceUntilIdle()
         
         viewModel.startUpload()
@@ -206,8 +209,8 @@ class UploadViewModelTest {
     
     @Test
     fun `cancelUpload should stop upload process`() = runTest {
-        val fileInfo = FileInfo("test.mp3", 1024L, "audio/mpeg", mockUri)
-        viewModel.onFileSelected(mockFile, fileInfo)
+        val fileInfo = FileInfo(realFile.name, realFile.length(), "audio/mpeg", mockUri)
+        viewModel.onFileSelected(realFile, fileInfo)
         testDispatcher.scheduler.advanceUntilIdle()
         
         viewModel.startUpload()

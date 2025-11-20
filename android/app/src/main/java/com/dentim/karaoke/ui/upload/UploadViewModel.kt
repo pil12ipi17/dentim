@@ -1,5 +1,6 @@
 package com.dentim.karaoke.ui.upload
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
@@ -110,12 +111,18 @@ class UploadViewModel @Inject constructor(
             try {
                 _uploadState.value = _uploadState.value.copy(isUploading = true)
                 
-                uploadTrackUseCase.execute(fileState.file, aiModel, fileState.filename)
+                uploadTrackUseCase.execute(
+                    file = fileState.file, 
+                    aiModel = aiModel, 
+                    filename = fileState.filename,
+                    skipDuplicateCheck = true  // Always skip duplicate check for better UX
+                )
                     .collect { progress ->
                         _uploadProgress.emit(progress)
                         
                         when (progress) {
                             is UploadProgress.DuplicateFound -> {
+                                // This shouldn't happen with skipDuplicateCheck = true
                                 duplicateTrack = progress.existingTrack
                                 _uploadState.value = _uploadState.value.copy(
                                     isUploading = false,
@@ -129,9 +136,9 @@ class UploadViewModel @Inject constructor(
                                 )
                                 _messageEvent.emit("Upload completed successfully!")
                                 
-                                // Auto-navigate back to home after success
+                                // Navigate to home to show the processing track
                                 kotlinx.coroutines.delay(1500)
-                                _navigationEvent.emit(UploadNavigationEvent.NavigateToHome)
+                                _navigationEvent.emit(UploadNavigationEvent.NavigateToProcessing(progress.processing.id))
                             }
                             is UploadProgress.Failed -> {
                                 _uploadState.value = _uploadState.value.copy(
@@ -162,9 +169,65 @@ class UploadViewModel @Inject constructor(
      * Upload anyway (ignore duplicate)
      */
     fun uploadAnyway() {
+        val fileState = _selectedFile.value ?: return
+        val aiModel = _selectedAIModel.value
+        
         duplicateTrack = null
         _uploadState.value = _uploadState.value.copy(hasDuplicate = false)
-        startUpload()
+        
+        currentUploadJob?.cancel()
+        currentUploadJob = viewModelScope.launch {
+            try {
+                _uploadState.value = _uploadState.value.copy(isUploading = true)
+                
+                uploadTrackUseCase.execute(
+                    file = fileState.file, 
+                    aiModel = aiModel, 
+                    filename = fileState.filename,
+                    skipDuplicateCheck = true  // Skip duplicate check when uploading anyway
+                )
+                    .collect { progress ->
+                        _uploadProgress.emit(progress)
+                        
+                        when (progress) {
+                            is UploadProgress.DuplicateFound -> {
+                                // This shouldn't happen when skipDuplicateCheck = true
+                                Log.w("UploadViewModel", "Unexpected duplicate found in uploadAnyway")
+                            }
+                            is UploadProgress.Completed -> {
+                                _uploadState.value = _uploadState.value.copy(
+                                    isUploading = false,
+                                    isCompleted = true
+                                )
+                                _messageEvent.emit("Upload completed successfully!")
+                                
+                                // Navigate to home to show the processing track
+                                kotlinx.coroutines.delay(1500)
+                                _navigationEvent.emit(UploadNavigationEvent.NavigateToProcessing(progress.processing.id))
+                            }
+                            is UploadProgress.Failed -> {
+                                _uploadState.value = _uploadState.value.copy(
+                                    isUploading = false,
+                                    error = progress.error
+                                )
+                                val appError = AppError.ProcessingError(progress.error)
+                                _errorEvent.emit(appError)
+                            }
+                            else -> {
+                                // Progress updates are handled in the Fragment
+                            }
+                        }
+                    }
+                    
+            } catch (e: Exception) {
+                _uploadState.value = _uploadState.value.copy(
+                    isUploading = false,
+                    error = e.message
+                )
+                val appError = ErrorHandler.handleError(e, "UploadViewModel", "Upload anyway")
+                _errorEvent.emit(appError)
+            }
+        }
     }
     
     /**

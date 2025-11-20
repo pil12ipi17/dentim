@@ -9,6 +9,7 @@ import com.dentim.karaoke.domain.model.Track
 import com.dentim.karaoke.domain.model.Processing
 import com.dentim.karaoke.domain.model.Session
 import com.dentim.karaoke.domain.repository.TrackRepository
+import com.dentim.karaoke.ui.home.model.TrackWithProcessing
 import com.dentim.karaoke.domain.repository.ProcessingRepository
 import com.dentim.karaoke.domain.repository.SessionRepository
 import com.dentim.karaoke.util.ErrorHandler
@@ -39,6 +40,93 @@ class HomeViewModel @Inject constructor(
     private val _messageEvent = MutableSharedFlow<String>()
     val messageEvent: SharedFlow<String> = _messageEvent.asSharedFlow()
     
+    private val _forceRefresh = MutableSharedFlow<Unit>()
+    
+    // Recent tracks with processing info (limit to 5)
+    val recentTracksWithProcessing: StateFlow<List<TrackWithProcessing>> = combine(
+        trackRepository.getAllTracks(),
+        processingRepository.getAllProcessingJobs(),
+        _forceRefresh.onStart { emit(Unit) }
+    ) { tracks: List<Track>, processingJobs: List<Processing>, _: Unit ->
+        // Create TrackWithProcessing for existing tracks
+        val trackWithProcessingList = tracks.map { track ->
+            val relatedProcessing = processingJobs
+                .filter { 
+                    // Try to match by trackId first, then by filename
+                    (it.trackId == track.id) ||
+                    (it.filename == track.filename) ||
+                    (extractTitleFromFilename(it.filename ?: "") == extractTitleFromFilename(track.filename))
+                }
+                .maxByOrNull { it.createdAt } // Get most recent processing
+            
+            TrackWithProcessing(track, relatedProcessing)
+        }.toMutableList()
+        
+        // Add active processing jobs that don't have tracks yet
+        val processingsWithoutTracks = processingJobs.filter { processing ->
+            // Find processing jobs that are active and don't match any existing tracks
+            processing.status.isActive && tracks.none { track ->
+                (processing.trackId == track.id) || 
+                (processing.filename == track.filename) ||
+                (extractTitleFromFilename(processing.filename ?: "") == extractTitleFromFilename(track.filename))
+            }
+        }
+        
+        // Create placeholder tracks for active processing jobs
+        processingsWithoutTracks.forEach { processing ->
+            val cleanTitle = extractTitleFromFilename(processing.filename ?: "Processing...")
+            val placeholderTrack = Track(
+                id = processing.id, // Use processing ID as track ID temporarily
+                filename = processing.filename ?: "Processing...",
+                title = cleanTitle,
+                artist = "Unknown Artist",
+                originalPath = "", // Placeholder value
+                fileSize = 0L, // Placeholder value
+                durationMs = 3 * 60 * 1000L, // Default to 3 minutes
+                mimeType = "audio/mpeg", // Placeholder value
+                checksum = "", // Placeholder value
+                createdAt = processing.createdAt
+            )
+            trackWithProcessingList.add(TrackWithProcessing(placeholderTrack, processing))
+        }
+        
+        // Deduplicate by normalized title and take most recent
+        val deduplicated = trackWithProcessingList
+            .groupBy { 
+                // Use track title if available, otherwise extract from filename
+                val titleToGroup = if (it.track.title.isNotBlank() && it.track.title != "Unknown Track") {
+                    it.track.title.lowercase()
+                } else {
+                    extractTitleFromFilename(it.track.filename).lowercase()
+                }
+                titleToGroup
+            }
+            .values
+            .map { group ->
+                // Prefer tracks with processing status, then most recent
+                val withProcessing = group.filter { it.processing != null }
+                when {
+                    withProcessing.isNotEmpty() -> {
+                        // Prefer active processing, then completed, then most recent
+                        withProcessing.find { it.isProcessing }
+                            ?: withProcessing.find { it.canPlay }
+                            ?: withProcessing.maxByOrNull { it.track.createdAt }
+                            ?: withProcessing.first()
+                    }
+                    else -> {
+                        // No processing, take most recent
+                        group.maxByOrNull { it.track.createdAt } ?: group.first()
+                    }
+                }
+            }
+        
+        deduplicated.sortedByDescending { it.track.createdAt }.take(5)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+    
     // Recent tracks (limit to 5)
     val recentTracks: StateFlow<List<Track>> = trackRepository.getAllTracks()
         .map { tracks -> tracks.take(5) }
@@ -61,7 +149,7 @@ class HomeViewModel @Inject constructor(
         trackRepository.getAllTracks(),
         sessionRepository.getAllSessions(),
         processingRepository.getAllProcessingJobs()
-    ) { tracks, sessions, processingJobs ->
+    ) { tracks: List<Track>, sessions: List<Session>, processingJobs: List<Processing> ->
         HomeStatistics(
             totalTracks = tracks.size,
             totalSessions = sessions.size,
@@ -77,6 +165,40 @@ class HomeViewModel @Inject constructor(
     init {
         refreshData()
         startDataSync()
+        startProcessingProgressUpdater()
+    }
+    
+    /**
+     * Auto-refresh every 3 seconds to update estimated progress for active processing
+     */
+    private fun startProcessingProgressUpdater() {
+        viewModelScope.launch {
+            while (true) {
+                try {
+                    kotlinx.coroutines.delay(3000) // Update every 3 seconds
+                    
+                    // Check if there are any active processing jobs
+                    val currentTracks = recentTracksWithProcessing.value
+                    val hasActiveProcessing = currentTracks.any { it.isProcessing }
+                    
+                    if (hasActiveProcessing) {
+                        // Sync processing jobs from backend
+                        val syncResult = processingRepository.syncProcessingJobs()
+                        if (syncResult.isSuccess) {
+                            // Trigger UI refresh
+                            _forceRefresh.emit(Unit)
+                            Log.d("HomeViewModel", "Auto-refreshed progress for ${currentTracks.count { it.isProcessing }} active processing jobs")
+                        }
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    Log.d("HomeViewModel", "Processing progress updater cancelled")
+                    break
+                } catch (e: Exception) {
+                    Log.w("HomeViewModel", "Error in processing progress updater", e)
+                    // Continue the loop even on error
+                }
+            }
+        }
     }
     
     /**
@@ -109,19 +231,19 @@ class HomeViewModel @Inject constructor(
         jobs.forEach { processing ->
             try {
                 // Check if track already exists
-                val existingTrack = trackRepository.getTrackById(processing.trackId)
+                val existingTrack = trackRepository.getTrackById(processing.trackId ?: processing.id ?: "")
                 if (existingTrack == null && processing.status.isCompleted) {
                     // Create a new track based on processing job
                     val track = Track(
-                        id = processing.trackId,
-                        filename = "track_${processing.trackId.take(8)}.mp3",
-                        title = "Track ${processing.trackId.take(8)}",
+                        id = processing.trackId ?: processing.id ?: "",
+                        filename = "track_${(processing.trackId ?: processing.id ?: "").take(8)}.mp3",
+                        title = "Track ${(processing.trackId ?: processing.id ?: "").take(8)}",
                         artist = "Unknown Artist",
                         originalPath = "", // Not available from backend
                         fileSize = 5000000L, // 5MB default
                         durationMs = 180000L, // 3 minutes default
                         mimeType = "audio/mpeg",
-                        checksum = null,
+                        checksum = "", // Placeholder value
                         createdAt = java.util.Date(),
                         updatedAt = java.util.Date()
                     )
@@ -156,6 +278,13 @@ class HomeViewModel @Inject constructor(
                 _isLoading.value = false
             }
         }
+    }
+    
+    /**
+     * Handle track with processing selection
+     */
+    fun onTrackWithProcessingSelected(trackWithProcessing: TrackWithProcessing) {
+        onTrackSelected(trackWithProcessing.track)
     }
     
     /**
@@ -198,7 +327,7 @@ class HomeViewModel @Inject constructor(
     fun onProcessingSelected(processing: Processing) {
         viewModelScope.launch {
             try {
-                if (processing.status.isCompleted) {
+                if (processing.status.isCompleted && processing.trackId != null) {
                     // Processing is complete, navigate to player
                     val track = trackRepository.getTrackById(processing.trackId)
                     if (track != null) {
@@ -264,6 +393,51 @@ class HomeViewModel @Inject constructor(
             createdAt = java.util.Date(),
             updatedAt = java.util.Date()
         )
+    }
+    
+    /**
+     * Force refresh data (e.g., when user navigates back to home)
+     */
+    fun forceRefreshData() {
+        viewModelScope.launch {
+            _forceRefresh.emit(Unit)
+            Log.d("HomeViewModel", "Forced data refresh triggered")
+        }
+    }
+    
+    /**
+     * Extract title from filename by removing common prefixes and suffixes
+     */
+    private fun extractTitleFromFilename(filename: String): String {
+        // Remove file extension
+        val withoutExtension = filename.substringBeforeLast(".")
+        
+        // Remove timestamp prefix (13+ digits followed by underscore)
+        var cleaned = withoutExtension.replace(Regex("^\\d{13,}_"), "")
+        
+        // Remove shorter timestamp prefixes (10+ digits followed by underscore)
+        cleaned = cleaned.replace(Regex("^\\d{10,}_"), "")
+        
+        // Remove UUID-like prefixes (8-4-4-4-12 hex format)
+        cleaned = cleaned.replace(Regex("^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}_?"), "")
+        
+        // Replace underscores with spaces and clean up
+        cleaned = cleaned.replace("_", " ")
+            .replace("(mp3.pm)", "")
+            .replace("(mp3 pm)", "")
+            .replace("(2)", "")
+            .replace("(3)", "")
+            .replace("(4)", "")
+            .replace("(5)", "")
+            .replace(".mp3", "")
+            .replace(".wav", "")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        
+        // Remove leading dashes or spaces
+        cleaned = cleaned.removePrefix(" ").removePrefix("-").trim()
+        
+        return cleaned.takeIf { it.isNotBlank() } ?: "Unknown Track"
     }
 }
 

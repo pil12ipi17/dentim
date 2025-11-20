@@ -11,6 +11,10 @@
     <string name="save">Save</string>
     
     <!-- Navigation -->
+    <string name="home">Home</string>
+    <string name="upload">Upload</string>
+    <string name="player">Player</string>
+    <string name="profile">Profile</string>
     <string name="upload_track">Upload Track</string>
     <string name="track_library">Track Library</string>
     <string name="karaoke_player">Karaoke Player</string>
@@ -46,6 +50,11 @@
     <string name="track_count">%d tracks</string>
     
     <!-- Player Screen -->
+    <string name="no_track_selected">No Track Selected</string>
+    <string name="unknown_artist">Unknown Artist</string>
+    <string name="volume_controls">Volume Controls</string>
+    <string name="select_track">Select Track</string>
+    <string name="choose_track">Choose Track</string>
     <string name="vocals_volume">Vocals Volume</string>
     <string name="instrumental_volume">Instrumental Volume</string>
     <string name="play">Play</string>
@@ -69,5 +78,16 @@
     <string name="error_invalid_file">Invalid audio file</string>
     <string name="error_permission_denied">Permission denied</string>
     <string name="error_unknown">An unknown error occurred</string>
+    
+    <!-- Profile Screen -->
+    <string name="app_user">App User</string>
+    <string name="free_plan">Free Plan</string>
+    <string name="statistics">Statistics</string>
+    <string name="tracks_processed">Tracks Processed</string>
+    <string name="karaoke_sessions">Karaoke Sessions</string>
+    <string name="successful_processing">Successful Processing</string>
+    <string name="upgrade_to_premium">Upgrade to Premium</string>
+    <string name="premium_features_coming_soon">Premium features coming soon</string>
+    <string name="upgrade_now">Upgrade Now</string>
     
 </resources>

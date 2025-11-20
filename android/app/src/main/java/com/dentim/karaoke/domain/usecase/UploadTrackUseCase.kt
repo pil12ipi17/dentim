@@ -40,7 +40,8 @@ class UploadTrackUseCase @Inject constructor(
     fun execute(
         file: File,
         aiModel: AIModel,
-        filename: String? = null
+        filename: String? = null,
+        skipDuplicateCheck: Boolean = false
     ): Flow<UploadProgress> = flow {
         
         emit(UploadProgress.Started)
@@ -56,13 +57,17 @@ class UploadTrackUseCase @Inject constructor(
             val checksum = ChecksumCalculator.calculateMD5(file)
             Log.d(TAG, "Calculated checksum: $checksum")
             
-            // Step 3: Check for duplicates
-            emit(UploadProgress.CheckingDuplicates)
-            val existingTrack = trackRepository.getTrackByChecksum(checksum)
-            if (existingTrack != null) {
-                Log.d(TAG, "Duplicate track found: ${existingTrack.id}")
-                emit(UploadProgress.DuplicateFound(existingTrack))
-                return@flow
+            // Step 3: Check for duplicates (skip if requested)
+            if (!skipDuplicateCheck) {
+                emit(UploadProgress.CheckingDuplicates)
+                val existingTrack = trackRepository.getTrackByChecksum(checksum)
+                if (existingTrack != null) {
+                    Log.d(TAG, "Duplicate track found: ${existingTrack.id}")
+                    emit(UploadProgress.DuplicateFound(existingTrack))
+                    return@flow
+                }
+            } else {
+                Log.d(TAG, "Skipping duplicate check as requested")
             }
             
             // Step 4: Create track entity
@@ -93,10 +98,16 @@ class UploadTrackUseCase @Inject constructor(
             if (uploadResult.isSuccess) {
                 val processing = uploadResult.getOrThrow().copy(trackId = trackId)
                 
-                // Update processing with correct track ID
-                processingRepository.updateProcessing(processing)
+                // Save processing with correct track ID
+                processingRepository.insertProcessing(processing)
                 
-                Log.d(TAG, "Upload successful: ${processing.id}")
+                Log.d(TAG, "Upload successful: ${processing.id}, processing started")
+                
+                // Show processing status with estimated time
+                emit(UploadProgress.ProcessingOnServer(180)) // 3 minutes estimate
+                
+                // For now, we complete immediately after upload
+                // In a real app, you'd poll server for completion
                 emit(UploadProgress.Completed(track, processing))
             } else {
                 val error = uploadResult.exceptionOrNull()
@@ -140,6 +151,7 @@ sealed class UploadProgress {
     object CheckingDuplicates : UploadProgress()
     object SavingTrack : UploadProgress()
     object UploadingToServer : UploadProgress()
+    data class ProcessingOnServer(val estimatedTime: Int? = null) : UploadProgress()
     
     data class DuplicateFound(val existingTrack: Track) : UploadProgress()
     data class Completed(val track: Track, val processing: Processing) : UploadProgress()

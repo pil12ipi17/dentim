@@ -90,3 +90,7 @@ log/
 *.db
 *.sqlite
 *.sqlite3
+
+# Backend Outputs
+backend/outputs/*
+!backend/outputs/.gitkeep

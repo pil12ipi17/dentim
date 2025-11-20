@@ -4,6 +4,7 @@ import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
 import com.dentim.karaoke.data.remote.dto.ProcessingJobDto
+import com.dentim.karaoke.data.remote.dto.UploadResponseDto
 import com.dentim.karaoke.data.remote.dto.ProcessingStatusDto
 import com.dentim.karaoke.data.remote.dto.ApiResponseDto
 
@@ -21,7 +22,7 @@ interface KaraokeApiService {
     suspend fun uploadAudioFile(
         @Part file: MultipartBody.Part,
         @Part("ai_model") aiModel: String = "demucs"
-    ): Response<ProcessingJobDto>
+    ): Response<UploadResponseDto>
     
     /**
      * Get processing job status

@@ -4,6 +4,7 @@ import com.dentim.karaoke.data.local.entity.TrackEntity
 import com.dentim.karaoke.data.local.entity.ProcessingEntity
 import com.dentim.karaoke.data.local.entity.SessionEntity
 import com.dentim.karaoke.data.remote.dto.ProcessingJobDto
+import com.dentim.karaoke.data.remote.dto.UploadResponseDto
 import com.dentim.karaoke.data.remote.dto.ProcessingStatusDto
 import com.dentim.karaoke.domain.model.Track
 import com.dentim.karaoke.domain.model.Processing
@@ -17,6 +18,7 @@ import java.util.Locale
 fun com.dentim.karaoke.domain.model.ProcessingStatus.toEntity(): com.dentim.karaoke.data.local.entity.ProcessingStatus {
     return when (this) {
         com.dentim.karaoke.domain.model.ProcessingStatus.PENDING -> com.dentim.karaoke.data.local.entity.ProcessingStatus.PENDING
+        com.dentim.karaoke.domain.model.ProcessingStatus.QUEUED -> com.dentim.karaoke.data.local.entity.ProcessingStatus.QUEUED
         com.dentim.karaoke.domain.model.ProcessingStatus.UPLOADING -> com.dentim.karaoke.data.local.entity.ProcessingStatus.UPLOADING
         com.dentim.karaoke.domain.model.ProcessingStatus.PROCESSING -> com.dentim.karaoke.data.local.entity.ProcessingStatus.PROCESSING
         com.dentim.karaoke.domain.model.ProcessingStatus.COMPLETED -> com.dentim.karaoke.data.local.entity.ProcessingStatus.COMPLETED
@@ -28,11 +30,13 @@ fun com.dentim.karaoke.domain.model.ProcessingStatus.toEntity(): com.dentim.kara
 fun com.dentim.karaoke.data.local.entity.ProcessingStatus.toDomain(): com.dentim.karaoke.domain.model.ProcessingStatus {
     return when (this) {
         com.dentim.karaoke.data.local.entity.ProcessingStatus.PENDING -> com.dentim.karaoke.domain.model.ProcessingStatus.PENDING
+        com.dentim.karaoke.data.local.entity.ProcessingStatus.QUEUED -> com.dentim.karaoke.domain.model.ProcessingStatus.QUEUED
         com.dentim.karaoke.data.local.entity.ProcessingStatus.UPLOADING -> com.dentim.karaoke.domain.model.ProcessingStatus.UPLOADING
         com.dentim.karaoke.data.local.entity.ProcessingStatus.PROCESSING -> com.dentim.karaoke.domain.model.ProcessingStatus.PROCESSING
         com.dentim.karaoke.data.local.entity.ProcessingStatus.COMPLETED -> com.dentim.karaoke.domain.model.ProcessingStatus.COMPLETED
         com.dentim.karaoke.data.local.entity.ProcessingStatus.FAILED -> com.dentim.karaoke.domain.model.ProcessingStatus.FAILED
         com.dentim.karaoke.data.local.entity.ProcessingStatus.CANCELLED -> com.dentim.karaoke.domain.model.ProcessingStatus.CANCELLED
+        com.dentim.karaoke.data.local.entity.ProcessingStatus.ERROR -> com.dentim.karaoke.domain.model.ProcessingStatus.FAILED
     }
 }
 
@@ -69,6 +73,7 @@ fun ProcessingEntity.toDomain(): Processing = Processing(
     progressPercent = progressPercent,
     aiModel = AIModel.fromApiValue(aiModel),
     errorMessage = errorMessage,
+    filename = filename,
     vocalsPath = vocalsPath,
     instrumentalPath = instrumentalPath,
     processingTimeMs = processingTimeMs,
@@ -84,6 +89,7 @@ fun Processing.toEntity(): ProcessingEntity = ProcessingEntity(
     progressPercent = progressPercent,
     aiModel = aiModel.apiValue,
     errorMessage = errorMessage,
+    filename = filename,
     vocalsPath = vocalsPath,
     instrumentalPath = instrumentalPath,
     processingTimeMs = processingTimeMs,
@@ -126,29 +132,63 @@ fun Session.toEntity(): SessionEntity = SessionEntity(
 // DTO mappers
 private val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.US)
 
-fun ProcessingJobDto.toDomain(): Processing = Processing(
+fun UploadResponseDto.toDomain(): Processing = Processing(
     id = jobId,
-    trackId = "", // Will be set from context
-    status = com.dentim.karaoke.domain.model.ProcessingStatus.valueOf(status.uppercase()),
+    trackId = null, // Will be set when linking with track
+    status = mapProcessingStatus(status),
     progressPercent = progress,
     aiModel = AIModel.fromApiValue(aiModel),
     errorMessage = errorMessage,
+    filename = filename,
+    vocalsPath = vocalsPath,
+    instrumentalPath = instrumentalPath,
     createdAt = parseDate(createdAt),
     updatedAt = parseDate(updatedAt),
-    estimatedCompletion = estimatedCompletion?.let { parseDate(it) }
+    completedAt = completedAt?.let { parseDate(it) },
+    estimatedCompletion = estimatedCompletion?.let { parseDate(it) },
+    currentStep = currentStep
+)
+
+fun ProcessingJobDto.toDomain(): Processing = Processing(
+    id = jobId,
+    trackId = null, // Will be set when linking with track
+    status = mapProcessingStatus(status),
+    progressPercent = progress,
+    aiModel = AIModel.fromApiValue(aiModel),
+    errorMessage = errorMessage,
+    filename = filename,
+    vocalsPath = vocalsPath,
+    instrumentalPath = instrumentalPath,
+    createdAt = parseDate(createdAt),
+    updatedAt = parseDate(updatedAt),
+    completedAt = completedAt?.let { parseDate(it) },
+    estimatedCompletion = estimatedCompletion?.let { parseDate(it) },
+    currentStep = currentStep
 )
 
 fun ProcessingStatusDto.toDomain(): Processing = Processing(
     id = jobId,
-    trackId = "", // Will be set from context
-    status = com.dentim.karaoke.domain.model.ProcessingStatus.valueOf(status.uppercase()),
+    trackId = null, // Will be set when linking with track
+    status = mapProcessingStatus(status),
     progressPercent = progress,
-    aiModel = AIModel.DEMUCS, // Default, will be updated
+    aiModel = aiModel?.let { AIModel.fromApiValue(it) } ?: AIModel.DEMUCS,
     errorMessage = errorMessage,
+    filename = filename,
+    vocalsPath = vocalsPath,
+    instrumentalPath = instrumentalPath,
     currentStep = currentStep,
-    createdAt = Date(), // Will be updated from database
-    updatedAt = Date()
+    createdAt = createdAt?.let { parseDate(it) } ?: Date(),
+    updatedAt = updatedAt?.let { parseDate(it) } ?: Date(),
+    completedAt = completedAt?.let { parseDate(it) },
+    estimatedCompletion = null
 )
+
+private fun mapProcessingStatus(status: String): com.dentim.karaoke.domain.model.ProcessingStatus {
+    return when (status.uppercase()) {
+        "ERROR" -> com.dentim.karaoke.domain.model.ProcessingStatus.FAILED
+        else -> com.dentim.karaoke.domain.model.ProcessingStatus.valueOf(status.uppercase())
+    }
+}
 
 private fun parseDate(dateString: String): Date {
     return try {

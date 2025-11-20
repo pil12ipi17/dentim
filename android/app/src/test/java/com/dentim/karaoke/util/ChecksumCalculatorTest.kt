@@ -4,7 +4,10 @@ import org.junit.Test
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
+import org.junit.runner.RunWith
 import org.junit.rules.TemporaryFolder
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.File
 import java.io.FileWriter
 import kotlinx.coroutines.test.runTest
@@ -12,6 +15,8 @@ import kotlinx.coroutines.test.runTest
 /**
  * Unit tests for ChecksumCalculator
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(manifest=Config.NONE)
 class ChecksumCalculatorTest {
     
     @get:Rule

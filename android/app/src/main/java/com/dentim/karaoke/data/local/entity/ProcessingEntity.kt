@@ -32,7 +32,7 @@ data class ProcessingEntity(
     val id: String,
     
     @ColumnInfo(name = "track_id")
-    val trackId: String,
+    val trackId: String?,
     
     @ColumnInfo(name = "status")
     val status: ProcessingStatus,
@@ -45,6 +45,9 @@ data class ProcessingEntity(
     
     @ColumnInfo(name = "error_message")
     val errorMessage: String? = null,
+    
+    @ColumnInfo(name = "filename")
+    val filename: String? = null,
     
     @ColumnInfo(name = "vocals_path")
     val vocalsPath: String? = null,
@@ -70,9 +73,11 @@ data class ProcessingEntity(
  */
 enum class ProcessingStatus {
     PENDING,
+    QUEUED,
     UPLOADING,
     PROCESSING,
     COMPLETED,
     FAILED,
-    CANCELLED
+    CANCELLED,
+    ERROR // Alias for FAILED from server
 }

@@ -12,6 +12,8 @@ import androidx.navigation.fragment.findNavController
 import com.dentim.karaoke.R
 import com.dentim.karaoke.databinding.FragmentUploadBinding
 import com.dentim.karaoke.domain.model.AIModel
+import com.dentim.karaoke.ui.player.PlayerViewModel
+import com.dentim.karaoke.ui.home.HomeViewModel
 import com.dentim.karaoke.util.FilePicker
 import com.dentim.karaoke.util.FilePickerResult
 import com.dentim.karaoke.util.UserFeedback
@@ -29,6 +31,8 @@ class UploadFragment : Fragment() {
     
     private lateinit var binding: FragmentUploadBinding
     private val viewModel: UploadViewModel by viewModels()
+    private val playerViewModel: PlayerViewModel by viewModels()
+    private val homeViewModel: HomeViewModel by viewModels()
     
     private lateinit var filePicker: FilePicker
     private var progressDialog: ProgressDialog? = null
@@ -49,6 +53,7 @@ class UploadFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         setupFilePicker()
+        setupAudioPlayer()
         setupClickListeners()
         setupAIModelSelection()
         observeViewModel()
@@ -56,6 +61,11 @@ class UploadFragment : Fragment() {
     
     private fun setupFilePicker() {
         filePicker = FilePicker(this)
+    }
+    
+    private fun setupAudioPlayer() {
+        // AudioPlayer is now automatically injected via DI
+        // No need to create or initialize it manually
     }
     
     private fun setupClickListeners() {
@@ -163,14 +173,13 @@ class UploadFragment : Fragment() {
                         )
                     }
                     is UploadNavigationEvent.NavigateToPlayback -> {
-                        findNavController().navigate(
-                            UploadFragmentDirections.actionUploadToProcessing(event.processingId)
-                        )
+                        // Track is ready for playback - navigate to Home to show it in the list
+                        // User can then manually navigate to Player if they want to play
+                        findNavController().navigate(R.id.action_upload_to_home)
                     }
                     is UploadNavigationEvent.NavigateToProcessing -> {
-                        findNavController().navigate(
-                            UploadFragmentDirections.actionUploadToProcessing(event.processingId)
-                        )
+                        // Navigate to home to show processing track
+                        findNavController().navigate(R.id.action_upload_to_home)
                     }
                     is UploadNavigationEvent.ShowError -> {
                         UserFeedback.showInfo(requireContext(), event.message)
@@ -224,6 +233,10 @@ class UploadFragment : Fragment() {
             }
             is com.dentim.karaoke.domain.usecase.UploadProgress.UploadingToServer -> {
                 updateProgressDialog("Uploading to server...")
+            }
+            is com.dentim.karaoke.domain.usecase.UploadProgress.ProcessingOnServer -> {
+                val estimatedTime = progress.estimatedTime?.let { "${it / 60} minutes" } ?: "a few minutes"
+                updateProgressDialog("Processing audio with AI... (estimated time: $estimatedTime)")
             }
             is com.dentim.karaoke.domain.usecase.UploadProgress.DuplicateFound -> {
                 hideProgressDialog()

@@ -112,14 +112,13 @@ class ProcessingRepositoryImpl @Inject constructor(
             val response = apiService.uploadAudioFile(body, aiModel.apiValue)
             
             if (response.isSuccessful) {
-                val jobDto = response.body()!!
-                val processing = jobDto.toDomain().copy(
-                    id = jobDto.jobId,
-                    trackId = UUID.randomUUID().toString() // Will be set by caller
+                val uploadDto = response.body()!!
+                val processing = uploadDto.toDomain().copy(
+                    id = uploadDto.jobId,
+                    trackId = "" // Will be set by caller
                 )
                 
-                // Save to local database
-                insertProcessing(processing)
+                // Don't save to database yet - caller will set correct trackId and save
                 
                 // Subscribe to WebSocket updates
                 subscribeToProcessingUpdates(processing.id)

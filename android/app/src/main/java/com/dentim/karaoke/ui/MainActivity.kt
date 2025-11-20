@@ -7,13 +7,14 @@ import androidx.databinding.DataBindingUtil
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
 import com.dentim.karaoke.R
 import com.dentim.karaoke.databinding.ActivityMainBinding
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * Main activity hosting navigation and common UI components
- * Entry point for the karaoke application
+ * Entry point for the karaoke application with Bottom Navigation
  */
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -29,6 +30,7 @@ class MainActivity : AppCompatActivity() {
         
         setupNavigation()
         setupActionBar()
+        setupBottomNavigation()
     }
     
     private fun setupNavigation() {
@@ -38,11 +40,16 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun setupActionBar() {
-        setSupportActionBar(binding.toolbar)
-        setupActionBarWithNavController(navController)
+        // Disable action bar to use only bottom navigation
+        supportActionBar?.hide()
+    }
+    
+    private fun setupBottomNavigation() {
+        binding.bottomNavigation.setupWithNavController(navController)
     }
     
     override fun onSupportNavigateUp(): Boolean {
-        return navController.navigateUp() || super.onSupportNavigateUp()
+        // Disable back button - use only bottom navigation
+        return false
     }
 }
